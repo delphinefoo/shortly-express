@@ -1,4 +1,5 @@
 var express = require('express');
+var session = require('express-session');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
@@ -23,24 +24,41 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
 
-app.get('/', 
+app.get('/',
+function(req, res) {
+  //if user is not logged in redirect to login
+  res.render('index');
+});
+
+app.use(session({
+  secret: 'localhost',
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.get('/login',
+function(req, res) {
+  res.render('login');
+});
+
+app.get('/signup',
+function(req, res) {
+  res.render('signup');
+});
+
+app.get('/create',
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
-function(req, res) {
-  res.render('index');
-});
-
-app.get('/links', 
+app.get('/links',
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links', 
+app.post('/links',
 function(req, res) {
   var uri = req.body.url;
 
@@ -77,7 +95,35 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+//On post to /signup,
+app.post('/signup', function(req,res){
+  //get username, password and sessionid;
+  var username = req.body.username;
+  var password = req.body.password;
+  var sessionid = req.session.id;
+  //if username and password are supplied
+  if (username && password && sessionid){
+    //create user in table with username, password and session
+    var testUser = new User({
+      username: username,
+      password: password,
+      sessionid: sessionid
+    }).save().then(function(){
+      new User({username:username}).fetch().then(function(model) {
+        console.log(model);
+      });
+    });
 
+  } else {
+    //else bad request
+    res.send(400);
+  }
+});
+
+//On post to /login,
+  //if username and password are supplied
+    //create user session
+  //else redirect back to login
 
 
 /************************************************************/

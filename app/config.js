@@ -46,9 +46,12 @@ db.knex.schema.hasTable('users').then(function(exists) {
   if (!exists) {
     //create an object representing our table
     db.knex.schema.createTable('users', function(user) {
-      user.string('username', 255).primary();
+      user.string('username', 255);
       user.string('password', 64);
-    });
+      user.string('sessionid', 64);
+    }).then(function (table) {
+      console.log('Created Table', table);
+    });;
   }
 });
 
