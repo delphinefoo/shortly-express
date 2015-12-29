@@ -11,6 +11,7 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var bcrypt = require('bcrypt-nodejs');
 
 var app = express();
 
@@ -23,6 +24,11 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(session({
+  secret: 'localhost',
+  resave: false,
+  saveUninitialized: true
+}));
 
 app.get('/',
 function(req, res) {
@@ -30,11 +36,6 @@ function(req, res) {
   res.render('index');
 });
 
-app.use(session({
-  secret: 'localhost',
-  resave: false,
-  saveUninitialized: false
-}));
 
 app.get('/login',
 function(req, res) {
@@ -101,6 +102,9 @@ app.post('/signup', function(req,res){
   var username = req.body.username;
   var password = req.body.password;
   var sessionid = req.session.id;
+  var salt = bcrypt.genSaltSync(Math.floor((Math.random()*10)));
+  password = bcrypt.hashSync(password, salt);
+
   //if username and password are supplied
   if (username && password && sessionid){
     //create user in table with username, password and session
@@ -108,9 +112,11 @@ app.post('/signup', function(req,res){
       username: username,
       password: password,
       sessionid: sessionid
+      //TODO: catch error on bad save
     }).save().then(function(){
+      res.redirect(302, '/');
       new User({username:username}).fetch().then(function(model) {
-        console.log(model);
+        //console.log("\n\n\n\n Model", model);
       });
     });
 
@@ -121,9 +127,33 @@ app.post('/signup', function(req,res){
 });
 
 //On post to /login,
+app.post('/login', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  var sessionid = req.session.id;
   //if username and password are supplied
-    //create user session
-  //else redirect back to login
+  if (username && password && sessionid) {
+    //find user in database by name
+    new User({username:username}).fetch().then(function(model) {
+      //if password matches name
+      if (bcrypt.compareSync(password, model.get('password'))) {
+        //save user session
+        model.save({sessionid:sessionid}, {method:'update'}).then(function(model) {
+          res.redirect(302, '/');
+        });
+      //else throw 400 error
+      } else {
+        console.log('bad password');
+        res.send(400);
+      }
+    });
+  } else {
+    //else redirect back to login
+    console.log('bad request');
+    res.send(400);
+  }
+
+});
 
 
 /************************************************************/
