@@ -33,7 +33,13 @@ app.use(session({
 app.get('/',
 function(req, res) {
   //if user is not logged in redirect to login
-  res.render('index');
+  util.checkUser(req.session.id).then(function(model){
+    if(model){
+      res.render('index');
+    } else {
+      res.redirect(302, '/login');
+    }
+  });
 });
 
 
@@ -49,13 +55,25 @@ function(req, res) {
 
 app.get('/create',
 function(req, res) {
-  res.render('index');
+  util.checkUser(req.session.id).then(function(model){
+    if(model){
+      res.render('index');
+    } else {
+      res.redirect(302, '/login');
+    }
+  });
 });
 
 app.get('/links',
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.send(200, links.models);
+  util.checkUser(req.session.id).then(function(model){
+    if(model){
+      Links.reset().fetch().then(function(links) {
+        res.send(200, links.models);
+      });
+    } else {
+      res.redirect(302, '/login');
+    }
   });
 });
 
