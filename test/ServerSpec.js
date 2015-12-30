@@ -67,7 +67,7 @@ describe('', function() {
     var requestWithSession = request.defaults({jar: true});
 
     beforeEach(function(done){      // create a user that we can then log-in with
-      var password = bcrypt.hashSync('Phillip', bcrypt.genSaltSync(1));
+      var password = bcrypt.hashSync('Phillip');
       new User({
           'username': 'Phillip',
           'password': password
@@ -293,11 +293,11 @@ describe('', function() {
   describe('Account Login:', function(){
 
     var requestWithSession = request.defaults({jar: true});
-
+    var password = bcrypt.hashSync('Phillip');
     beforeEach(function(done){
       new User({
           'username': 'Phillip',
-          'password': 'Phillip'
+          'password': password
       }).save().then(function(){
         done();
       });

@@ -77,6 +77,15 @@ function(req, res) {
   });
 });
 
+app.get('/logout', function(req, res){
+  new User({sessionid:req.session.id}).fetch().then(function(model) {
+    model.save({sessionid:''}, {method:'update'}).then(function(){
+      req.session.destroy();
+      res.redirect(302, '/login');
+    });
+  });
+});
+
 app.post('/links',
 function(req, res) {
   var uri = req.body.url;
@@ -133,9 +142,6 @@ app.post('/signup', function(req,res){
       //TODO: catch error on bad save
     }).save().then(function(){
       res.redirect(302, '/');
-      new User({username:username}).fetch().then(function(model) {
-        //console.log("\n\n\n\n Model", model);
-      });
     });
 
   } else {
@@ -153,16 +159,20 @@ app.post('/login', function(req, res) {
   if (username && password && sessionid) {
     //find user in database by name
     new User({username:username}).fetch().then(function(model) {
-      //if password matches name
-      if (bcrypt.compareSync(password, model.get('password'))) {
-        //save user session
-        model.save({sessionid:sessionid}, {method:'update'}).then(function(model) {
-          res.redirect(302, '/');
-        });
-      //else throw 400 error
+      if (model) {
+        //if password matches name
+        if (bcrypt.compareSync(password, model.get('password'))) {
+          //save user session
+          model.save({sessionid:sessionid}, {method:'update'}).then(function(model) {
+            res.redirect(302, '/');
+          });
+        //else throw 400 error
+        } else {
+          console.log('bad password');
+          res.send(400);
+        }
       } else {
-        console.log('bad password');
-        res.send(400);
+        res.redirect(302, '/login');
       }
     });
   } else {
@@ -172,7 +182,6 @@ app.post('/login', function(req, res) {
   }
 
 });
-
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
